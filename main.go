@@ -4,19 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
-	cmmeta "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
+	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
-	"github.com/jetstack/cert-manager/pkg/acme/webhook/cmd"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/linode/linodego"
@@ -110,7 +109,7 @@ func (c *linodeDNSProviderSolver) getLinodeClient(ch *v1alpha1.ChallengeRequest)
 	// Extract Linode token from K8s secret provided by config apiKeySecretRef
 	apiKey, err := c.getAPIKey(&cfg, ch.ResourceNamespace)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve Linode API token from secret: %v", err)
+		return nil, fmt.Errorf("failed to retrieve Linode API token from secret: %w", err)
 	}
 
 	// Create Linodego Client
@@ -169,14 +168,14 @@ func (c *linodeDNSProviderSolver) fetchRecord(linodeClient *linodego.Client, zon
 func (c *linodeDNSProviderSolver) fetchZoneAndRecord(linodeClient *linodego.Client, domain string, entry string) (*linodego.Domain, *linodego.DomainRecord, error) {
 	zone, err := c.fetchZone(linodeClient, domain)
 	if err != nil {
-		return zone, nil, fmt.Errorf("Failed to fetch zone `%s`: %v", domain, err)
+		return zone, nil, fmt.Errorf("failed to fetch zone `%s`: %w", domain, err)
 	} else if zone == nil {
-		return zone, nil, fmt.Errorf("Failed to find zone for `%s`", domain)
+		return zone, nil, fmt.Errorf("failed to find zone for `%s`", domain)
 	}
 
 	record, err := c.fetchRecord(linodeClient, zone.ID, entry)
 	if err != nil {
-		return zone, record, fmt.Errorf("Failed to fetch record `%s` in zone `%s`: %v", entry, domain, err)
+		return zone, record, fmt.Errorf("failed to fetch record `%s` in zone `%s`: %w", entry, domain, err)
 	}
 
 	return zone, record, nil
@@ -219,7 +218,7 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 				TTLSec:   180,
 			})
 		if err != nil {
-			return fmt.Errorf("Failed to update record: %v", err)
+			return fmt.Errorf("failed to update record: %w", err)
 		}
 	} else {
 		// Create if it does not exist
@@ -237,7 +236,7 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 				TTLSec:   180,
 			})
 		if err != nil {
-			return fmt.Errorf("Failed to create record: %v", err)
+			return fmt.Errorf("failed to create record: %w", err)
 		}
 	}
 
@@ -286,7 +285,7 @@ func (c *linodeDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		klog.V(6).Infof("Deleting record `%s` from zone `%s`", record.Name, zone.Domain)
 		err := linodeClient.DeleteDomainRecord(c.ctx, zone.ID, record.ID)
 		if err != nil {
-			return fmt.Errorf("Failed to delete record: %v", err)
+			return fmt.Errorf("failed to delete record: %w", err)
 		}
 	}
 
@@ -330,7 +329,7 @@ func (c *linodeDNSProviderSolver) stringFromSecret(namespace, secretName, key st
 	// Extract token from secret
 	tokenBinary, ok := secret.Data[key]
 	if !ok {
-		return nil, fmt.Errorf("Key `%q` not found in secret `%s/%s`",
+		return nil, fmt.Errorf("key `%q` not found in secret `%s/%s`",
 			key, namespace, secretName)
 	}
 
@@ -340,7 +339,7 @@ func (c *linodeDNSProviderSolver) stringFromSecret(namespace, secretName, key st
 
 func (c *linodeDNSProviderSolver) certNamespaceToken(namespace string, secretRef cmmeta.SecretKeySelector) (*string, error) {
 	if secretRef.LocalObjectReference.Name == "" {
-		return nil, fmt.Errorf("Linode API token secret in certificate namespace not specified")
+		return nil, fmt.Errorf("the Linode API token secret in certificate namespace not specified")
 	}
 
 	token, err := c.stringFromSecret(namespace, secretRef.LocalObjectReference.Name, secretRef.Key)
@@ -355,13 +354,13 @@ func (c *linodeDNSProviderSolver) podNamespaceToken() (*string, error) {
 	// Get pod namespace
 	namespace := PodNamespace
 	if namespace == "" {
-		data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 		if err != nil {
-			return nil, fmt.Errorf("Failed to find the webhook pod namespace: %v", err)
+			return nil, fmt.Errorf("failed to find the webhook pod namespace: %w", err)
 		}
 		namespace = strings.TrimSpace(string(data))
 		if len(namespace) == 0 {
-			return nil, fmt.Errorf("Invalid webhook pod namespace provided")
+			return nil, fmt.Errorf("invalid webhook pod namespace provided")
 		}
 	}
 
@@ -390,7 +389,7 @@ func (c *linodeDNSProviderSolver) getAPIKey(cfg *linodeDNSProviderConfig, namesp
 		return token, nil
 	}
 
-	return nil, fmt.Errorf("Failed to read Linode API token secret: %v", err)
+	return nil, fmt.Errorf("failed to read Linode API token secret: %w", err)
 }
 
 // loadConfig is a small helper function that decodes JSON configuration into
@@ -402,7 +401,7 @@ func loadConfig(cfgJSON *extapi.JSON) (linodeDNSProviderConfig, error) {
 		return cfg, nil
 	}
 	if err := json.Unmarshal(cfgJSON.Raw, &cfg); err != nil {
-		return cfg, fmt.Errorf("error decoding solver config: %v", err)
+		return cfg, fmt.Errorf("error decoding solver config: %w", err)
 	}
 
 	return cfg, nil

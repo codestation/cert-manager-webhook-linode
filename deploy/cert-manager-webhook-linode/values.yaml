@@ -7,7 +7,7 @@
 # This group name should be **unique**, hence using your own company's domain
 # here is recommended.
 api:
-  groupName: acme.slicen.me
+  groupName: acme.megpoid.dev
 
 certManager:
   namespace: cert-manager
@@ -19,7 +19,7 @@ deployment:
   logLevel: 6
 
 image:
-  repository: slicen/cert-manager-webhook-linode
+  repository: ghcr.io/codestation/cert-manager-webhook-linode
   tag: latest
   pullPolicy: IfNotPresent
 

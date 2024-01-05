@@ -1,19 +1,19 @@
 # Cert-Manager ACME DNS01 Webhook Solver for Linode DNS Manager
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/slicen/cert-manager-webhook-linode)](https://goreportcard.com/report/github.com/slicen/cert-manager-webhook-linode)
-[![Releases](https://img.shields.io/github/v/release/slicen/cert-manager-webhook-linode?include_prereleases)](https://github.com/slicen/cert-manager-webhook-linode/releases)
-[![LICENSE](https://img.shields.io/github/license/slicen/cert-manager-webhook-linode)](https://github.com/slicen/cert-manager-webhook-linode/blob/master/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/codestation/cert-manager-webhook-linode)](https://goreportcard.com/report/github.com/codestation/cert-manager-webhook-linode)
+[![Releases](https://img.shields.io/github/v/release/codestation/cert-manager-webhook-linode?include_prereleases)](https://github.com/codestation/cert-manager-webhook-linode/releases)
+[![LICENSE](https://img.shields.io/github/license/codestation/cert-manager-webhook-linode)](https://github.com/codestation/cert-manager-webhook-linode/blob/master/LICENSE)
 
 A webhook to use [Linode DNS
 Manager](https://www.linode.com/docs/platform/manager/dns-manager) as a DNS01
-ACME Issuer for [cert-manager](https://github.com/jetstack/cert-manager).
+ACME Issuer for [cert-manager](https://github.com/cert-manager/cert-manager).
 
 ## Installation
 
 ```bash
 helm install cert-manager-webhook-linode \
   --namespace cert-manager \
-  https://github.com/slicen/cert-manager-webhook-linode/releases/download/v0.2.0/cert-manager-webhook-linode-v0.2.0.tgz
+  https://github.com/codestation/cert-manager-webhook-linode/releases/download/v0.3.0/cert-manager-webhook-linode-v0.3.0.tgz
 ```
 
 ## Usage
@@ -45,7 +45,7 @@ spec:
     - dns01:
       webhook:
         solverName: linode
-        groupName: acme.slicen.me
+        groupName: acme.megpoid.dev
 ```
 
 By default, the Linode API token used will be obtained from the
@@ -73,7 +73,7 @@ spec:
     - dns01:
       webhook:
         solverName: linode
-        groupName: acme.slicen.me
+        groupName: acme.megpoid.dev
         config:
           apiKeySecretRef:
             name: linode-credentials
