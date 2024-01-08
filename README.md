@@ -10,10 +10,31 @@ ACME Issuer for [cert-manager](https://github.com/cert-manager/cert-manager).
 
 ## Installation
 
+### With Helm
+
 ```bash
-helm install cert-manager-webhook-linode \
-  --namespace cert-manager \
-  https://github.com/codestation/cert-manager-webhook-linode/releases/download/v0.3.0/cert-manager-webhook-linode-v0.3.0.tgz
+git clone https://github.com/codestation/cert-manager-webhook-linode.git
+cd cert-manager-webhook-linode
+helm install exoscale-webhook ./deploy/linode-webhook
+```
+
+### With Kubectl or Kustomize
+
+The manifest is generated from Helm (`make rendered-manifest.yaml`)
+
+**Kubectl**
+```bash
+kubectl apply -f https://raw.githubusercontent.com/codestation/cert-manager-webhook-linode/master/deploy/linode-webhook-kustomize/install.yaml
+```
+
+**Kustomization file**
+```yaml
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - github.com/codestation/cert-manager-webhook-linode/deploy/linode-webhook-kustomize
 ```
 
 ## Usage
@@ -46,11 +67,11 @@ spec:
       webhook:
         solverName: linode
         groupName: acme.megpoid.dev
+        config:
+          apiKeySecretRef:
+            name: linode-credentials
+            key: token
 ```
-
-By default, the Linode API token used will be obtained from the
-linode-credentials Secret in the same namespace as the webhook.
-
 
 #### Per Namespace Linode API Tokens
 
@@ -98,5 +119,5 @@ Run the test suite with:
 ./scripts/fetch-test-binaries.sh
 export LINODE_TOKEN=$(echo -n "<your API token>" | base64 -w 0)
 envsubst < testdata/linode/secret.yaml.example > testdata/linode/secret.yaml
-TEST_ZONE_NAME=yourdomain.com. make verify
+TEST_ZONE_NAME=yourdomain.com. make test
 ```

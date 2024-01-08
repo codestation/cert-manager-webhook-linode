@@ -1,38 +1,47 @@
-IMAGE_NAME := "ghcr.io/codestation/cert-manager-webhook-linode"
-IMAGE_TAG := "v0.2.0"
+GO ?= $(shell which go)
+OS ?= $(shell $(GO) env GOOS)
+ARCH ?= $(shell $(GO) env GOARCH)
 
-K8S_VERSION := "1.28.3"
+IMAGE_NAME := "ghcr.io/codestation/cert-manager-webhook-linode"
+IMAGE_TAG := "v0.3.1"
 
 OUT := $(shell pwd)/_out
+DEPLOY_DIR := $(PWD)/deploy/linode-webhook
 
-$(shell mkdir -p "$(OUT)")
+KUBEBUILDER_VERSION=1.28.3
 
-.DEFAULT_GOAL := build
+HELM_FILES := $(shell find deploy/linode-webhook)
 
-.PHONY: verify test build clean _out/kubebuilder rendered-manifest.yaml
+test: _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/etcd _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/kube-apiserver _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/kubectl
+	TEST_ASSET_ETCD=_test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/etcd \
+	TEST_ASSET_KUBE_APISERVER=_test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/kube-apiserver \
+	TEST_ASSET_KUBECTL=_test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/kubectl \
+	$(GO) test -v .
 
-verify: _out/kubebuilder
-	TEST_ASSET_ETCD=_out/kubebuilder/bin/etcd \
-	TEST_ASSET_KUBECTL=_out/kubebuilder/bin/kubectl \
-	TEST_ASSET_KUBE_APISERVER=_out/kubebuilder/bin/kube-apiserver \
-	go test -v
+_test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH).tar.gz: | _test
+	curl -fsSL https://go.kubebuilder.io/test-tools/$(KUBEBUILDER_VERSION)/$(OS)/$(ARCH) -o $@
 
-_out/kubebuilder:
-	mkdir -p _out/kubebuilder
-	curl -fsSLo envtest-bins.tar.gz "https://go.kubebuilder.io/test-tools/${K8S_VERSION}/$(shell go env GOOS)/$(shell go env GOARCH)"
-	tar -C _out/kubebuilder --strip-components=1 -zvxf envtest-bins.tar.gz
-	rm envtest-bins.tar.gz
+_test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/etcd _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/kube-apiserver _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)/kubectl: _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH).tar.gz | _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH)
+	tar xfO $< kubebuilder/bin/$(notdir $@) > $@ && chmod +x $@
 
-test: verify
-
-build:
-	docker build --rm -t "${IMAGE_NAME}:${IMAGE_TAG}" -t "${IMAGE_NAME}:latest" .
-
+.PHONY: clean
 clean:
-	rm -r "${OUT}"
+	rm -r _test $(OUT)
 
-rendered-manifest.yaml:
+.PHONY: build
+build:
+	docker build -t "$(IMAGE_NAME):$(IMAGE_TAG)" .
+
+.PHONY: rendered-manifest.yaml
+rendered-manifest.yaml: $(DEPLOY_DIR)-kustomize/install.yaml
+
+$(DEPLOY_DIR)-kustomize/install.yaml: $(HELM_FILES) | $(OUT)
 	helm template \
-        --set image.repository=${IMAGE_NAME} \
-        --set image.tag=${IMAGE_TAG} \
-        deploy/cert-manager-webhook-linode > "${OUT}/rendered-manifest.yaml"
+	    linode-webhook \
+        --set image.repository=$(IMAGE_NAME) \
+        --set image.tag=$(IMAGE_TAG) \
+        --namespace cert-manager \
+        ${DEPLOY_DIR} > "${DEPLOY_DIR}-kustomize/install.yaml"
+
+_test $(OUT) _test/kubebuilder-$(KUBEBUILDER_VERSION)-$(OS)-$(ARCH):
+	mkdir -p $@

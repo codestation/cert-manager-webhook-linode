@@ -6,25 +6,21 @@
 # solve the DNS01 challenge.
 # This group name should be **unique**, hence using your own company's domain
 # here is recommended.
-api:
-  groupName: acme.megpoid.dev
+groupName: acme.megpoid.dev
 
 certManager:
   namespace: cert-manager
   serviceAccountName: cert-manager
 
-deployment:
-  secretName: linode-credentials
-  secretKey: token
-  logLevel: 6
-
 image:
-  repository: ghcr.io/codestation/cert-manager-webhook-linode
+  repository: ghcr.io/codestation/linode-webhook
   tag: latest
   pullPolicy: IfNotPresent
 
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: "linode-webhook"
+fullnameOverride: "cert-manager-webhook-linode"
+
+replicaCount: 1
 
 service:
   type: ClusterIP

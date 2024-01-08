@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 
-	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/klog/v2"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/linode/linodego"
 	"golang.org/x/oauth2"
 )
@@ -25,19 +24,13 @@ import (
 // GroupName is the K8s API group
 var GroupName = os.Getenv("GROUP_NAME")
 
-// PodNamespace is the namespace of the webhook pod
-var PodNamespace = os.Getenv("POD_NAMESPACE")
-
-// PodSecretName is the name of the secret to obtain the Linode API token from
-var PodSecretName = os.Getenv("POD_SECRET_NAME")
-
-// PodSecretKey is the key of the Linode API token within the secret POD_SECRET_NAME
-var PodSecretKey = os.Getenv("POD_SECRET_KEY")
-
 func main() {
 	if GroupName == "" {
 		panic("GROUP_NAME must be specified")
 	}
+
+	h := slog.NewJSONHandler(os.Stdout, nil)
+	slog.SetDefault(slog.New(h))
 
 	// This will register our external-dns DNS provider with the webhook serving
 	// library, making it available as an API under the provided GroupName.
@@ -51,7 +44,7 @@ func main() {
 
 // linodeDNSProviderSolver implements the provider-specific logic needed to
 // 'present' an ACME challenge TXT record to Linode.
-// To do so, it must implement the `github.com/jetstack/cert-manager/pkg/acme/webhook.Solver`
+// To do so, it must implement the `github.com/cert-manager/cert-manager/pkg/acme/webhook.Solver`
 // interface.
 type linodeDNSProviderSolver struct {
 	// If a Kubernetes 'clientset' is needed, you must:
@@ -85,7 +78,7 @@ type linodeDNSProviderConfig struct {
 	// `issuer.spec.acme.dns01.providers.webhook.config` field.
 
 	// Expect apiKeySecretRef with name: <secret name> and key: <token field in secret>
-	APIKeySecretRef cmmeta.SecretKeySelector `json:"apiKeySecretRef"`
+	APIKeySecretRef v1.SecretKeySelector `json:"apiKeySecretRef"`
 }
 
 // Name is used as the name for this DNS solver when referencing it on the ACME
@@ -113,7 +106,7 @@ func (c *linodeDNSProviderSolver) getLinodeClient(ch *v1alpha1.ChallengeRequest)
 	}
 
 	// Create Linodego Client
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *apiKey})
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: apiKey})
 
 	oauth2Client := &http.Client{
 		Transport: &oauth2.Transport{
@@ -122,7 +115,7 @@ func (c *linodeDNSProviderSolver) getLinodeClient(ch *v1alpha1.ChallengeRequest)
 	}
 
 	linodeClient := linodego.NewClient(oauth2Client)
-	linodeClient.SetUserAgent(fmt.Sprintf("cert-manager-webhook-linode/v0.2.0 linodego/%s", linodego.Version))
+	linodeClient.SetUserAgent(fmt.Sprintf("linode-webhook/v0.3.0 linodego/%s", linodego.Version))
 
 	return &linodeClient, nil
 }
@@ -187,7 +180,7 @@ func (c *linodeDNSProviderSolver) fetchZoneAndRecord(linodeClient *linodego.Clie
 // cert-manager itself will later perform a self check to ensure that the
 // solver has correctly configured the DNS provider.
 func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
-	klog.V(6).Infof("Presented with challenge for fqdn=%s zone=%s", ch.ResolvedFQDN, ch.ResolvedZone)
+	slog.Info("Presenting challenge", "fqdn", ch.ResolvedFQDN, "zone", ch.ResolvedZone)
 
 	linodeClient, err := c.getLinodeClient(ch)
 	if err != nil {
@@ -203,7 +196,7 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 
 	if record != nil {
 		// If entry already exists, update it
-		klog.V(6).Infof("Updating record for `%s` in zone `%s`", record.Name, zone.Domain)
+		slog.Info("Updating record", "record", record.Name, "zone", zone.Domain)
 		_, err := linodeClient.UpdateDomainRecord(
 			c.ctx,
 			zone.ID,
@@ -222,7 +215,7 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		}
 	} else {
 		// Create if it does not exist
-		klog.V(6).Infof("Creating new record `%s` in zone `%s`", entry, zone.Domain)
+		slog.Info("Creating record", "record", entry, "zone", zone.Domain)
 		_, err := linodeClient.CreateDomainRecord(
 			c.ctx,
 			zone.ID,
@@ -266,7 +259,7 @@ func getPriority() *int {
 // This is in order to facilitate multiple DNS validations for the same domain
 // concurrently.
 func (c *linodeDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
-	klog.V(6).Infof("Cleaning up challenge for fqdn=%s zone=%s", ch.ResolvedFQDN, ch.ResolvedZone)
+	slog.Info("Cleaning up challenge", "fqdn", ch.ResolvedFQDN, "zone", ch.ResolvedZone)
 
 	linodeClient, err := c.getLinodeClient(ch)
 	if err != nil {
@@ -282,7 +275,7 @@ func (c *linodeDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 
 	if record != nil {
 		// If entry already exists, delete it
-		klog.V(6).Infof("Deleting record `%s` from zone `%s`", record.Name, zone.Domain)
+		slog.Info("Deleting record", "record", record.Name, "zone", zone.Domain)
 		err := linodeClient.DeleteDomainRecord(c.ctx, zone.ID, record.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete record: %w", err)
@@ -302,7 +295,7 @@ func (c *linodeDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 // The stopCh can be used to handle early termination of the webhook, in cases
 // where a SIGTERM or similar signal is sent to the webhook process.
 func (c *linodeDNSProviderSolver) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct{}) error {
-	klog.V(6).Info("Initializing")
+	slog.Info("Initializing")
 
 	// Make a Kubernetes clientset available
 	var err error
@@ -317,79 +310,23 @@ func (c *linodeDNSProviderSolver) Initialize(kubeClientConfig *rest.Config, stop
 	return nil
 }
 
-// Returns a given data key from a given secret as a string
-func (c *linodeDNSProviderSolver) stringFromSecret(namespace, secretName, key string) (*string, error) {
-	// Get secret
-	secret, err := c.client.CoreV1().Secrets(namespace).Get(c.ctx,
-		secretName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	// Extract token from secret
-	tokenBinary, ok := secret.Data[key]
-	if !ok {
-		return nil, fmt.Errorf("key `%q` not found in secret `%s/%s`",
-			key, namespace, secretName)
-	}
-
-	token := string(tokenBinary)
-	return &token, nil
-}
-
-func (c *linodeDNSProviderSolver) certNamespaceToken(namespace string, secretRef cmmeta.SecretKeySelector) (*string, error) {
-	if secretRef.LocalObjectReference.Name == "" {
-		return nil, fmt.Errorf("the Linode API token secret in certificate namespace not specified")
-	}
-
-	token, err := c.stringFromSecret(namespace, secretRef.LocalObjectReference.Name, secretRef.Key)
-	if err != nil {
-		return nil, err
-	}
-
-	return token, nil
-}
-
-func (c *linodeDNSProviderSolver) podNamespaceToken() (*string, error) {
-	// Get pod namespace
-	namespace := PodNamespace
-	if namespace == "" {
-		data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-		if err != nil {
-			return nil, fmt.Errorf("failed to find the webhook pod namespace: %w", err)
-		}
-		namespace = strings.TrimSpace(string(data))
-		if len(namespace) == 0 {
-			return nil, fmt.Errorf("invalid webhook pod namespace provided")
-		}
-	}
-
-	// Get secret
-	token, err := c.stringFromSecret(namespace, PodSecretName, PodSecretKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return token, nil
-}
-
 // Get Linode API token from Kubernetes secret.
-func (c *linodeDNSProviderSolver) getAPIKey(cfg *linodeDNSProviderConfig, namespace string) (*string, error) {
-	// Get token from secret in the same namespace as the certificate if possible
-	token, err := c.certNamespaceToken(namespace, cfg.APIKeySecretRef)
-	if err == nil {
-		return token, nil
+func (c *linodeDNSProviderSolver) getAPIKey(cfg *linodeDNSProviderConfig, namespace string) (string, error) {
+	apiSecretResource, err := c.client.CoreV1().Secrets(namespace).Get(
+		context.Background(),
+		cfg.APIKeySecretRef.Name,
+		metav1.GetOptions{},
+	)
+	if err != nil {
+		return "", fmt.Errorf("could not get secret %s: %w", cfg.APIKeySecretRef.Name, err)
 	}
 
-	// Fallback to default secret in the same namespace as the webhook pod
-	klog.V(6).Infof("Failed to use certificate namespace Linode API token secret: %v", err)
-	klog.V(6).Info("Trying webhook pod namespace Linode API token secret")
-	token, err = c.podNamespaceToken()
-	if err == nil {
-		return token, nil
+	apiKeyData, ok := apiSecretResource.Data[cfg.APIKeySecretRef.Key]
+	if !ok {
+		return "", fmt.Errorf("could not get key %s in secret %s", cfg.APIKeySecretRef.Key, cfg.APIKeySecretRef.Name)
 	}
 
-	return nil, fmt.Errorf("failed to read Linode API token secret: %w", err)
+	return string(apiKeyData), nil
 }
 
 // loadConfig is a small helper function that decodes JSON configuration into

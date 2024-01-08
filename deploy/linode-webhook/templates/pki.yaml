@@ -5,7 +5,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: {{ include "cert-manager-webhook-linode.selfSignedIssuer" . }}
-  namespace: {{ .Values.certManager.namespace | quote }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     app: {{ include "cert-manager-webhook-linode.name" . }}
     chart: {{ include "cert-manager-webhook-linode.chart" . }}
@@ -21,7 +21,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ include "cert-manager-webhook-linode.rootCACertificate" . }}
-  namespace: {{ .Values.certManager.namespace | quote }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     app: {{ include "cert-manager-webhook-linode.name" . }}
     chart: {{ include "cert-manager-webhook-linode.chart" . }}
@@ -32,7 +32,7 @@ spec:
   duration: 43800h # 5y
   issuerRef:
     name: {{ include "cert-manager-webhook-linode.selfSignedIssuer" . }}
-  commonName: "ca.cert-manager-webhook-linode.cert-manager"
+  commonName: "ca.linode-webhook.cert-manager"
   isCA: true
 
 ---
@@ -42,7 +42,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: {{ include "cert-manager-webhook-linode.rootCAIssuer" . }}
-  namespace: {{ .Values.certManager.namespace | quote }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     app: {{ include "cert-manager-webhook-linode.name" . }}
     chart: {{ include "cert-manager-webhook-linode.chart" . }}
@@ -59,7 +59,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ include "cert-manager-webhook-linode.servingCertificate" . }}
-  namespace: {{ .Values.certManager.namespace | quote }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     app: {{ include "cert-manager-webhook-linode.name" . }}
     chart: {{ include "cert-manager-webhook-linode.chart" . }}
@@ -71,6 +71,6 @@ spec:
   issuerRef:
     name: {{ include "cert-manager-webhook-linode.rootCAIssuer" . }}
   dnsNames:
-  - {{ include "cert-manager-webhook-linode.fullname" . }}
-  - {{ include "cert-manager-webhook-linode.fullname" . }}.{{ .Values.certManager.namespace }}
-  - {{ include "cert-manager-webhook-linode.fullname" . }}.{{ .Values.certManager.namespace }}.svc
+    - {{ include "cert-manager-webhook-linode.fullname" . }}
+    - {{ include "cert-manager-webhook-linode.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "cert-manager-webhook-linode.fullname" . }}.{{ .Release.Namespace }}.svc
