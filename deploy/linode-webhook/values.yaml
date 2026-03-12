@@ -15,8 +15,8 @@ certManager:
   serviceAccountName: cert-manager
 
 image:
-  repository: ghcr.io/codestation/linode-webhook
-  tag: latest
+  repository: ghcr.io/codestation/cert-manager-webhook-linode
+  tag: ""
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -45,3 +45,18 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: "OnRootMismatch"
+  runAsNonRoot: true
+
+securityContext:
+  # -- The default security context is heavily restricted,
+  # feel free to tune it to your requirements
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true

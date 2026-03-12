@@ -7,7 +7,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 ---
@@ -19,7 +19,7 @@ metadata:
   name: cert-manager-webhook-linode:domain-solver
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 rules:
@@ -39,7 +39,7 @@ metadata:
   name: cert-manager-webhook-linode:auth-delegator
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 roleRef:
@@ -59,7 +59,7 @@ metadata:
   name: cert-manager-webhook-linode:domain-solver
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 roleRef:
@@ -83,7 +83,7 @@ metadata:
   namespace: kube-system
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 roleRef:
@@ -104,7 +104,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -126,7 +126,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -142,19 +142,31 @@ spec:
         release: cert-manager-webhook-linode
     spec:
       serviceAccountName: cert-manager-webhook-linode
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: cert-manager-webhook-linode
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
           image: "ghcr.io/codestation/cert-manager-webhook-linode:v0.3.2"
           imagePullPolicy: IfNotPresent
           args:
             - --tls-cert-file=/tls/tls.crt
             - --tls-private-key-file=/tls/tls.key
+            - --secure-port=8443
           env:
             - name: GROUP_NAME
               value: "acme.megpoid.dev"
           ports:
             - name: https
-              containerPort: 443
+              containerPort: 8443
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -184,7 +196,7 @@ metadata:
   name: v1alpha1.acme.megpoid.dev
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
   annotations:
@@ -207,7 +219,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -227,7 +239,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -250,7 +262,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -265,7 +277,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.2
+    chart: cert-manager-webhook-linode-0.3.3
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
