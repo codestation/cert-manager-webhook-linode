@@ -157,7 +157,7 @@ func (c *linodeDNSProviderSolver) fetchRecord(linodeClient *linodego.Client, zon
 }
 
 // Returns the details of a given record entry in Linode DNS Manager, specified by the domain and record
-// Wraper for fetchZone and fetchRecord
+// Wrapper for fetchZone and fetchRecord
 func (c *linodeDNSProviderSolver) fetchZoneAndRecord(linodeClient *linodego.Client, domain string, entry string) (*linodego.Domain, *linodego.DomainRecord, error) {
 	zone, err := c.fetchZone(linodeClient, domain)
 	if err != nil {
@@ -205,9 +205,9 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 				Name:     record.Name,
 				Target:   ch.Key,
 				Type:     linodego.RecordTypeTXT,
-				Weight:   getWeight(),
-				Port:     getPort(),
-				Priority: getPriority(),
+				Weight:   new(1),
+				Port:     new(0),
+				Priority: new(0),
 				TTLSec:   180,
 			})
 		if err != nil {
@@ -223,9 +223,9 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 				Name:     entry,
 				Target:   ch.Key,
 				Type:     linodego.RecordTypeTXT,
-				Weight:   getWeight(),
-				Port:     getPort(),
-				Priority: getPriority(),
+				Weight:   new(1),
+				Port:     new(0),
+				Priority: new(0),
 				TTLSec:   180,
 			})
 		if err != nil {
@@ -234,22 +234,6 @@ func (c *linodeDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	return nil
-}
-
-// Pointer int wrappers
-func getWeight() *int {
-	weight := 1
-	return &weight
-}
-
-func getPort() *int {
-	port := 0
-	return &port
-}
-
-func getPriority() *int {
-	priority := 0
-	return &priority
 }
 
 // CleanUp should delete the relevant TXT record from the DNS provider console.
