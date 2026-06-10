@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/api/core/v1"
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,7 +16,8 @@ import (
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
-	"github.com/linode/linodego"
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/linode/linodego/v2"
 	"golang.org/x/oauth2"
 )
 
@@ -114,7 +114,11 @@ func (c *linodeDNSProviderSolver) getLinodeClient(ch *v1alpha1.ChallengeRequest)
 		},
 	}
 
-	linodeClient := linodego.NewClient(oauth2Client)
+	linodeClient, err := linodego.NewClient(oauth2Client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Linode client: %w", err)
+	}
+
 	linodeClient.SetUserAgent(fmt.Sprintf("linode-webhook/v0.3.0 linodego/%s", linodego.Version))
 
 	return &linodeClient, nil

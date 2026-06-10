@@ -3,7 +3,7 @@ OS ?= $(shell $(GO) env GOOS)
 ARCH ?= $(shell $(GO) env GOARCH)
 
 IMAGE_NAME := "ghcr.io/codestation/cert-manager-webhook-linode"
-IMAGE_TAG := "v0.3.2"
+IMAGE_TAG := "v0.3.3"
 
 OUT := $(shell pwd)/_out
 

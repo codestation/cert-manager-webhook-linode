@@ -7,7 +7,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 ---
@@ -19,7 +19,7 @@ metadata:
   name: cert-manager-webhook-linode:domain-solver
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 rules:
@@ -39,7 +39,7 @@ metadata:
   name: cert-manager-webhook-linode:auth-delegator
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 roleRef:
@@ -59,7 +59,7 @@ metadata:
   name: cert-manager-webhook-linode:domain-solver
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 roleRef:
@@ -71,6 +71,7 @@ subjects:
     kind: ServiceAccount
     name: cert-manager
     namespace: cert-manager
+
 ---
 # Source: cert-manager-webhook-linode/templates/rbac.yaml
 # Grant the webhook permission to read the ConfigMap containing the Kubernetes
@@ -83,7 +84,7 @@ metadata:
   namespace: kube-system
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 roleRef:
@@ -104,7 +105,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -117,6 +118,7 @@ spec:
   selector:
     app: cert-manager-webhook-linode
     release: cert-manager-webhook-linode
+
 ---
 # Source: cert-manager-webhook-linode/templates/deployment.yaml
 apiVersion: apps/v1
@@ -126,7 +128,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -153,9 +155,9 @@ spec:
           securityContext:
             capabilities:
               drop:
-                - ALL
+              - ALL
             readOnlyRootFilesystem: true
-          image: "ghcr.io/codestation/cert-manager-webhook-linode:v0.3.2"
+          image: "ghcr.io/codestation/cert-manager-webhook-linode:v0.3.3"
           imagePullPolicy: IfNotPresent
           args:
             - --tls-cert-file=/tls/tls.crt
@@ -188,6 +190,7 @@ spec:
         - name: certs
           secret:
             secretName: cert-manager-webhook-linode-webhook-tls
+
 ---
 # Source: cert-manager-webhook-linode/templates/apiservice.yaml
 apiVersion: apiregistration.k8s.io/v1
@@ -196,7 +199,7 @@ metadata:
   name: v1alpha1.acme.megpoid.dev
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
   annotations:
@@ -209,6 +212,7 @@ spec:
     name: cert-manager-webhook-linode
     namespace: cert-manager
   version: v1alpha1
+
 ---
 # Source: cert-manager-webhook-linode/templates/pki.yaml
 # Generate a CA Certificate used to sign certificates for the webhook
@@ -219,7 +223,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -239,7 +243,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -251,6 +255,7 @@ spec:
     - cert-manager-webhook-linode
     - cert-manager-webhook-linode.cert-manager
     - cert-manager-webhook-linode.cert-manager.svc
+
 ---
 # Source: cert-manager-webhook-linode/templates/pki.yaml
 # Create a selfsigned Issuer, in order to create a root CA certificate for
@@ -262,7 +267,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
@@ -277,7 +282,7 @@ metadata:
   namespace: "cert-manager"
   labels:
     app: cert-manager-webhook-linode
-    chart: cert-manager-webhook-linode-0.3.3
+    chart: cert-manager-webhook-linode-0.3.4
     release: cert-manager-webhook-linode
     heritage: Helm
 spec:
