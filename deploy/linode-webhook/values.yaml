@@ -14,6 +14,8 @@ certManager:
   namespace: cert-manager
   serviceAccountName: cert-manager
 
+secretName: linode-token
+
 image:
   repository: ghcr.io/codestation/cert-manager-webhook-linode
   tag: ""

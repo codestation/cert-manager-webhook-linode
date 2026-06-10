@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cert-manager-webhook-linode
-  namespace: "cert-manager"
+  namespace: cert-manager
   labels:
     app: cert-manager-webhook-linode
     chart: cert-manager-webhook-linode-0.3.4
@@ -26,9 +26,9 @@ rules:
   - apiGroups:
       - acme.megpoid.dev
     resources:
-      - '*'
+      - "*"
     verbs:
-      - 'create'
+      - "create"
 ---
 # Source: cert-manager-webhook-linode/templates/rbac.yaml
 # apiserver gets the auth-delegator role to delegate auth decisions to
@@ -71,7 +71,19 @@ subjects:
     kind: ServiceAccount
     name: cert-manager
     namespace: cert-manager
-
+---
+# Source: cert-manager-webhook-linode/templates/rbac.yaml
+# Grant the webhook permission to read the Secret containing the Linode API token
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cert-manager-webhook-linode:secret-reader
+  namespace: cert-manager
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: [linode-token]
+  verbs: ["get", "watch"]
 ---
 # Source: cert-manager-webhook-linode/templates/rbac.yaml
 # Grant the webhook permission to read the ConfigMap containing the Kubernetes
@@ -95,7 +107,24 @@ subjects:
   - apiGroup: ""
     kind: ServiceAccount
     name: cert-manager-webhook-linode
-    namespace: cert-manager
+    namespace: "cert-manager"
+---
+# Source: cert-manager-webhook-linode/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cert-manager-webhook-linode:secret-reader
+  namespace: "cert-manager"
+subjects:
+ - apiGroup: ""
+   kind: ServiceAccount
+   name: cert-manager-webhook-linode
+   namespace: "cert-manager"
+roleRef:
+  kind: Role
+  name: cert-manager-webhook-linode:secret-reader
+  apiGroup: rbac.authorization.k8s.io
+
 ---
 # Source: cert-manager-webhook-linode/templates/service.yaml
 apiVersion: v1
